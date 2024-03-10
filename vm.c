@@ -17,7 +17,7 @@ void initVM() {
 #undef INITIAL_STACK_CAPACITY
 }
 
-void freeVM() { free(vm.stack); }
+void freeVM() { FREE_ARRAY(Value, vm.stack, vm.stackCapacity); }
 
 void push(Value value) {
   if ((vm.stackTop - vm.stack) >= vm.stackCapacity) {
