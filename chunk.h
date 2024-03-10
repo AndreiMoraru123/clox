@@ -10,11 +10,18 @@ typedef enum {
 } OpCode;
 
 typedef struct {
+  int line;
+  int startByte;
+} LineStart;
+
+typedef struct {
   int count;
   int capacity;
   uint8_t *code;
-  int *lines;
   ValueArray constants;
+  LineStart *lines;
+  int lineCount;
+  int lineCapacity;
 } Chunk;
 
 void initChunk(Chunk *chunk);
