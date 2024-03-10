@@ -1,17 +1,30 @@
 #include "vm.h"
 #include "common.h"
 #include "debug.h"
+#include "memory.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 VM vm;
 
 static void resetStack() { vm.stackTop = vm.stack; }
 
-void initVM() { resetStack(); }
+void initVM() {
+#define INITIAL_STACK_CAPACITY 8
+  vm.stackCapacity = INITIAL_STACK_CAPACITY;
+  vm.stack = (Value *)malloc(sizeof(Value) * vm.stackCapacity);
+  resetStack();
+#undef INITIAL_STACK_CAPACITY
+}
 
-void freeVM() {}
+void freeVM() { free(vm.stack); }
 
 void push(Value value) {
+  if ((vm.stackTop - vm.stack) >= vm.stackCapacity) {
+    int oldCapacity = vm.stackCapacity;
+    vm.stackCapacity = GROW_CAPACITY(oldCapacity);
+    vm.stack = GROW_ARRAY(Value, vm.stack, oldCapacity, vm.stackCapacity);
+  }
   *vm.stackTop = value;
   vm.stackTop++;
 }
