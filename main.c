@@ -9,22 +9,29 @@ int main(int argc, char *argv[]) {
   Chunk chunk;
   initChunk(&chunk);
 
-  int constant = addConstant(&chunk, 1.2);
-  writeChunk(&chunk, OP_CONSTANT, 123);
-  writeChunk(&chunk, constant, 123);
+  // 4 - 3 * -2
 
-  constant = addConstant(&chunk, 3.4);
-  writeChunk(&chunk, OP_CONSTANT, 123);
-  writeChunk(&chunk, constant, 123);
+  // Negate 3
+  int constant = addConstant(&chunk, 3);
+  writeChunk(&chunk, OP_CONSTANT, 1);
+  writeChunk(&chunk, constant, 1);
+  writeChunk(&chunk, OP_NEGATE, 1);
 
-  writeChunk(&chunk, OP_ADD, 123);
+  // Negate 2
+  constant = addConstant(&chunk, 2);
+  writeChunk(&chunk, OP_CONSTANT, 1);
+  writeChunk(&chunk, constant, 1);
+  writeChunk(&chunk, OP_NEGATE, 1);
 
-  constant = addConstant(&chunk, 5.6);
-  writeChunk(&chunk, OP_CONSTANT, 123);
-  writeChunk(&chunk, constant, 123);
+  // Multiply -3 by -2
+  writeChunk(&chunk, OP_MULTIPLY, 1);
 
-  writeChunk(&chunk, OP_DIVIDE, 123);
-  writeChunk(&chunk, OP_NEGATE, 123);
+  // Add 4
+  constant = addConstant(&chunk, 4);
+  writeChunk(&chunk, OP_CONSTANT, 1);
+  writeChunk(&chunk, constant, 1);
+
+  writeChunk(&chunk, OP_ADD, 1);
 
   writeChunk(&chunk, OP_RETURN, 123);
   disassembleChunk(&chunk, "test chunk");
