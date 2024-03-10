@@ -16,4 +16,6 @@ add_executable(clox
         debug.h
         debug.c
         value.c
-        value.h)
+        value.h
+        vm.c
+        vm.h)
