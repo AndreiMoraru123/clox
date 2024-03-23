@@ -1,6 +1,8 @@
 #ifndef clox__compiler_h
 #define clox__compiler_h
 
-void compile(const char *source);
+#include "vm.h"
+
+bool compile(const char *source, Chunk *chunk);
 
 #endif
