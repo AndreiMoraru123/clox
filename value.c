@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "memory.h"
+#include "object.h"
 #include "value.h"
 
 void initValueArray(ValueArray *array) {
@@ -36,6 +38,9 @@ void printValue(Value value) {
   case VAL_NUMBER:
     printf("%g", AS_NUMBER(value));
     break;
+  case VAL_OBJ:
+    printObject(value);
+    break;
   }
 }
 
@@ -49,6 +54,12 @@ bool valuesEqual(Value a, Value b) {
     return true;
   case VAL_NUMBER:
     return AS_NUMBER(a) == AS_NUMBER(b);
+  case VAL_OBJ: {
+    ObjString *aString = AS_STRING(a);
+    ObjString *bstring = AS_STRING(b);
+    return aString->length == bstring->length &&
+           memcmp(aString->chars, bstring->chars, aString->length) == 0;
+  }
   default:
     return false; // unreachable
   }
