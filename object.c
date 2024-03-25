@@ -29,10 +29,17 @@ ObjString *takeString(char *chars, int length) {
   return allocateString(chars, length);
 }
 
-ObjString *copyString(const char *chars, int length) {
-  char *heapChars = ALLOCATE(char, length + 1);
-  memcpy(heapChars, chars, length);
-  heapChars[length] = '\0';
+ObjString *copyString(const char *chars, int length, bool isOwn) {
+  char *heapChars;
+
+  if (isOwn) {
+    heapChars = ALLOCATE(char, length + 1);
+    memcpy(heapChars, chars, length);
+    heapChars[length] = '\0';
+  } else {
+    heapChars = (char *)chars;
+  }
+
   return allocateString(heapChars, length);
 }
 
