@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "memory.h"
@@ -6,22 +7,17 @@
 #include "value.h"
 #include "vm.h"
 
-#define ALLOCATE_OBJ(type, objectType)                                         \
-  (type *)allocateObject(sizeof(type), objectType)
-
-static Obj *allocateObject(size_t size, ObjType type) {
-  Obj *object = (Obj *)reallocate(NULL, 0, size);
-  object->type = type;
-
-  object->next = vm.objects;
-  vm.objects = object;
-  return object;
-}
-
 static ObjString *allocateString(char *chars, int length) {
-  ObjString *string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
+  ObjString *string =
+      (ObjString *)reallocate(NULL, 0, sizeof(ObjString) + length + 1);
+  string->obj.type = OBJ_STRING;
   string->length = length;
-  string->chars = chars;
+
+  memcpy(string->chars, chars, length);
+  string->chars[length] = '\0';
+
+  string->obj.next = vm.objects;
+  vm.objects = (Obj *)string;
   return string;
 }
 
