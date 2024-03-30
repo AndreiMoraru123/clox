@@ -23,8 +23,11 @@ static ObjString *allocateString(char *chars, int length, uint32_t hash) {
   ObjString *string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
   string->length = length;
   string->chars = chars;
-  string->hash = hash;
-  tableSet(&vm.strings, string, NIL_VAL);
+
+  Value stringValue = OBJ_VAL(string);
+  stringValue.hash = hash;
+
+  tableSet(&vm.strings, &stringValue, NIL_VAL);
   return string;
 }
 

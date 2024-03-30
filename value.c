@@ -49,13 +49,13 @@ bool valuesEqual(Value a, Value b) {
     return false;
   switch (a.type) {
   case VAL_BOOL:
-    return AS_BOOL(a) == AS_BOOL(b);
+    return AS_BOOL(a) == AS_BOOL(b) && a.hash == b.hash;
   case VAL_NIL:
     return true;
   case VAL_NUMBER:
-    return AS_NUMBER(a) == AS_NUMBER(b);
+    return AS_NUMBER(a) == AS_NUMBER(b) && a.hash == b.hash;
   case VAL_OBJ:
-    return AS_OBJ(a) == AS_OBJ(b);
+    return AS_OBJ(a) == AS_OBJ(b) && a.hash == b.hash;
   default:
     return false; // unreachable
   }

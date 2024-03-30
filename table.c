@@ -19,7 +19,7 @@ void freeTable(Table *table) {
   initTable(table);
 }
 
-static Entry *findEntry(Entry *entries, int capacity, ObjString *key) {
+static Entry *findEntry(Entry *entries, int capacity, Value *key) {
   uint32_t index = key->hash % capacity;
   Entry *tombstone = NULL;
 
@@ -64,7 +64,7 @@ static void adjustCapacity(Table *table, int capacity) {
   table->capacity = capacity;
 }
 
-bool tableSet(Table *table, ObjString *key, Value value) {
+bool tableSet(Table *table, Value *key, Value value) {
   if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
     int capacity = GROW_CAPACITY(table->capacity);
     adjustCapacity(table, capacity);
@@ -80,13 +80,11 @@ bool tableSet(Table *table, ObjString *key, Value value) {
   return isNewKey;
 }
 
-bool tableDelete(Table *table, ObjString *key) {
+bool tableDelete(Table *table, Value *key) {
   if (table->count == 0)
     return false;
 
   Entry *entry = findEntry(table->entries, table->capacity, key);
-  if (entry->key == NULL)
-    return false;
 
   // place a tombstone in the entry
   entry->key = NULL;
@@ -94,7 +92,7 @@ bool tableDelete(Table *table, ObjString *key) {
   return true;
 }
 
-bool tableGet(Table *table, ObjString *key, Value *value) {
+bool tableGet(Table *table, Value *key, Value *value) {
   if (table->count == 0)
     return false;
 
@@ -127,10 +125,13 @@ ObjString *tableFindString(Table *table, const char *chars, int length,
       // stop if we find an empty non-tombstone entry
       if (IS_NIL(entry->value))
         return NULL;
-    } else if (entry->key->length == length && entry->key->hash == hash &&
-               memcmp(entry->key->chars, chars, length) == 0) {
-      // found it
-      return entry->key;
+    } else if (IS_STRING(entry->value)) {
+      ObjString *string = AS_STRING(entry->value);
+      if (string->length == length &&
+          memcmp(string->chars, chars, length) == 0) {
+        // found it
+        return string;
+      }
     }
 
     index = (index + 1) % table->capacity;
