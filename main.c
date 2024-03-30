@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "benchmark.h"
 #include "chunk.h"
 #include "common.h"
 #include "debug.h"
@@ -63,14 +64,23 @@ static void runFile(const char *path) {
 int main(int argc, char *argv[]) {
   initVM();
 
-  if (argc == 1) {
-    repl();
-  } else if (argc == 2) {
-    runFile(argv[1]);
-  } else {
-    fprintf(stderr, "Usage: clox [path]\n");
-    exit(64);
-  }
+  Table table;
+  initTable(&table);
+  int numberOfInstructions = 1000000;
+  benchmarkTableInsertion(&table, numberOfInstructions);
+  benchmarkTableRetrieval(&table, numberOfInstructions);
+  benchmarkTableDeletion(&table, numberOfInstructions);
+
+  Table to;
+  Table from;
+  initTable(&to);
+  initTable(&from);
+  int copies = 10000;
+  benchmarkTableCopy(&from, &to, copies);
+
+  freeTable(&table);
+  freeTable(&to);
+  freeTable(&from);
 
   freeVM();
   return 0;

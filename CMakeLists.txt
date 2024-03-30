@@ -26,4 +26,6 @@ add_executable(clox
         object.c
         object.h
         table.c
-        table.h)
+        table.h
+        benchmark.c
+        benchmark.h)
