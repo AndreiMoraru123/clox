@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "common.h"
 #include "compiler.h"
@@ -137,8 +138,27 @@ static void declaration();
 static ParseRule *getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
+static bool stringsAreEqual(ObjString *a, ObjString *b) {
+  if (a->length != b->length)
+    return false;
+  return memcmp(a->chars, b->chars, a->length) == 0;
+}
+
 static uint8_t identifierConstant(Token *name) {
+  ObjString *tempString = copyString(name->start, name->length);
+
+  // loop look-up will introduce overhead, this is the trade off we are marking
+  for (int i = 0; i < currentChunk()->constants.count; ++i) {
+    Value value = currentChunk()->constants.values[i];
+    if (IS_STRING(value) && stringsAreEqual(AS_STRING(value), tempString)) {
+      return (uint8_t)i; // return the already existing index
+    }
+  }
+
+  // if not found, add the string to the VM's constant table
   return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
+
+  // no need to free tempString, the VM frees all objects
 }
 
 static uint8_t parseVariable(const char *errorMessage) {

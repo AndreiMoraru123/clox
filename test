@@ -1,5 +1,5 @@
 var breakfast = "beignets";
 var beverage = "cafe au lait";
-breakfast = "beignets with " + beverage;
+breakfast = "beignets with " + beverage; // breakfast will be looked-up here and retrieved from the constant table
 
 print breakfast;
