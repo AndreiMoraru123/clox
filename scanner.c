@@ -99,6 +99,8 @@ static TokenType checkKeyword(int start, int length, const char *rest,
       memcmp(scanner.start + start, rest, length) == 0) {
     return type;
   }
+
+  return TOKEN_IDENTIFIER;
 }
 
 static TokenType identifierType() {
@@ -135,6 +137,8 @@ static TokenType identifierType() {
     return checkKeyword(1, 4, "uper", TOKEN_SUPER);
   case 'v':
     return checkKeyword(1, 2, "ar", TOKEN_VAR);
+  case 'l':
+    return checkKeyword(1, 2, "et", TOKEN_LET);
   case 't':
     if (scanner.current - scanner.start > 1) {
       switch (scanner.start[1]) {

@@ -42,6 +42,7 @@ typedef struct {
 typedef struct {
   Token name;
   int depth;
+  bool isConst;
 } Local;
 
 typedef struct {
@@ -178,10 +179,11 @@ static bool identifiersEqual(Token *a, Token *b) {
   return memcmp(a->start, b->start, a->length) == 0;
 }
 
-static int resolveLocal(Compiler *compiler, Token *name) {
+static int resolveLocal(Compiler *compiler, Token *name, bool *isConst) {
   for (int i = compiler->localCount - 1; i >= 0; i--) {
     Local *local = &compiler->locals[i];
     if (identifiersEqual(name, &local->name)) {
+      *isConst = local->isConst;
       if (local->depth == -1) {
         error("Can't read local variable in its own initializer.");
       }
@@ -231,13 +233,15 @@ static uint8_t parseVariable(const char *errorMessage) {
   return identifierConstant(&parser.previous);
 }
 
-static void markInitialized() {
-  current->locals[current->localCount - 1].depth = current->scopeDepth;
+static void markInitialized(bool isConst) {
+  Local *local = &current->locals[current->localCount - 1];
+  local->depth = current->scopeDepth;
+  local->isConst = isConst;
 }
 
-static void defineVariable(uint8_t global) {
+static void defineVariable(uint8_t global, bool isConst) {
   if (current->scopeDepth > 0) {
-    markInitialized();
+    markInitialized(isConst);
     return;
   }
   emitBytes(OP_DEFINE_GLOBAL, global);
@@ -320,9 +324,21 @@ static void varDeclaration() {
   }
 
   consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
-  defineVariable(global);
+  defineVariable(global, false);
 }
 
+static void letDeclaration() {
+  uint8_t global = parseVariable("Expect variable name.");
+
+  if (match(TOKEN_EQUAL)) {
+    expression();
+  } else {
+    emitByte(OP_NIL);
+  }
+
+  consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration");
+  defineVariable(global, true);
+}
 static void expressionStatement() {
   expression();
   consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
@@ -345,6 +361,7 @@ static void synchronize() {
     case TOKEN_CLASS:
     case TOKEN_FUN:
     case TOKEN_VAR:
+    case TOKEN_LET:
     case TOKEN_FOR:
     case TOKEN_IF:
     case TOKEN_WHILE:
@@ -360,6 +377,8 @@ static void synchronize() {
 static void declaration() {
   if (match(TOKEN_VAR)) {
     varDeclaration();
+  } else if (match(TOKEN_LET)) {
+    letDeclaration();
   } else {
     statement();
   }
@@ -396,7 +415,8 @@ static void string(bool canAssign) {
 
 static void namedVariable(Token name, bool canAssign) {
   uint8_t getOp, setOp;
-  int arg = resolveLocal(current, &name);
+  bool isConst = false;
+  int arg = resolveLocal(current, &name, &isConst);
   if (arg != -1) {
     getOp = OP_GET_LOCAL;
     setOp = OP_SET_LOCAL;
@@ -406,6 +426,9 @@ static void namedVariable(Token name, bool canAssign) {
     setOp = OP_SET_GLOBAL;
   }
   if (canAssign && match(TOKEN_EQUAL)) {
+    if (isConst) {
+      error("cannot assign to a constant variable.");
+    }
     expression();
     emitBytes(setOp, (uint8_t)arg);
   } else {
@@ -472,6 +495,7 @@ ParseRule rules[] = {
     [TOKEN_THIS] = {NULL, NULL, PREC_NONE},
     [TOKEN_TRUE] = {literal, NULL, PREC_NONE},
     [TOKEN_VAR] = {NULL, NULL, PREC_NONE},
+    [TOKEN_LET] = {NULL, NULL, PREC_NONE},
     [TOKEN_WHILE] = {NULL, NULL, PREC_NONE},
     [TOKEN_ERROR] = {NULL, NULL, PREC_NONE},
     [TOKEN_EOF] = {NULL, NULL, PREC_NONE},

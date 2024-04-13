@@ -1,8 +1,6 @@
-var breakfast = "beignets";
-{
-    breakfast = "beignets";
-    var beverage = "cafe au lait";
-    breakfast = "beignets with " + beverage;
-}
+let breakfast = "cereal";
 
-print breakfast;
+{
+    let lunch = "soup";
+    lunch = "steak"; // error
+}
