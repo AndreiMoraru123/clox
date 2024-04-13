@@ -230,12 +230,6 @@ static uint8_t identifierConstant(Token *name) {
   return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
 }
 
-static bool identifiersEqual(Token *a, Token *b) {
-  if (a->length != b->length)
-    return false;
-  return memcmp(a->start, b->start, a->length) == 0;
-}
-
 static Local *bstSearch(Local *root, Token *name) {
   if (root == NULL) {
     return NULL;
