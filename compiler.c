@@ -45,7 +45,7 @@ typedef struct {
 } Local;
 
 typedef struct {
-  Local locals[UINT8_COUNT];
+  Local locals[UINT16_COUNT];
   int localCount;
   int scopeDepth;
 } Compiler;
@@ -110,25 +110,25 @@ static bool match(TokenType type) {
   return true;
 }
 
-static void emitByte(uint8_t byte) {
+static void emitByte(uint16_t byte) {
   writeChunk(currentChunk(), byte, parser.previous.line);
 }
 
-static void emitBytes(uint8_t byte1, uint8_t byte2) {
+static void emitBytes(uint16_t byte1, uint16_t byte2) {
   emitByte(byte1);
   emitByte(byte2);
 }
 
 static void emitReturn() { emitByte(OP_RETURN); }
 
-static uint8_t makeConstant(Value value) {
+static uint16_t makeConstant(Value value) {
   int constant = addConstant(currentChunk(), value);
   if (constant > UINT8_MAX) {
     error("too many constants in one chunk.");
     return 0;
   }
 
-  return (uint8_t)constant;
+  return (uint16_t)constant;
 }
 
 static void emitConstant(Value value) {
@@ -168,7 +168,7 @@ static void declaration();
 static ParseRule *getRule(TokenType type);
 static void parsePrecedence(Precedence precedence);
 
-static uint8_t identifierConstant(Token *name) {
+static uint16_t identifierConstant(Token *name) {
   return makeConstant(OBJ_VAL(copyString(name->start, name->length)));
 }
 
@@ -193,7 +193,7 @@ static int resolveLocal(Compiler *compiler, Token *name) {
 }
 
 static void addLocal(Token name) {
-  if (current->localCount == UINT8_COUNT) {
+  if (current->localCount == UINT16_COUNT) {
     error("Too many local variables in function.");
     return;
   }
@@ -221,7 +221,7 @@ static void declareVariable() {
   addLocal(*name);
 }
 
-static uint8_t parseVariable(const char *errorMessage) {
+static uint16_t parseVariable(const char *errorMessage) {
   consume(TOKEN_IDENTIFIER, errorMessage);
 
   declareVariable();
@@ -235,7 +235,7 @@ static void markInitialized() {
   current->locals[current->localCount - 1].depth = current->scopeDepth;
 }
 
-static void defineVariable(uint8_t global) {
+static void defineVariable(uint16_t global) {
   if (current->scopeDepth > 0) {
     markInitialized();
     return;
@@ -311,7 +311,7 @@ static void block() {
 }
 
 static void varDeclaration() {
-  uint8_t global = parseVariable("Expect variable name.");
+  uint16_t global = parseVariable("Expect variable name.");
 
   if (match(TOKEN_EQUAL)) {
     expression();
@@ -395,7 +395,7 @@ static void string(bool canAssign) {
 }
 
 static void namedVariable(Token name, bool canAssign) {
-  uint8_t getOp, setOp;
+  uint16_t getOp, setOp;
   int arg = resolveLocal(current, &name);
   if (arg != -1) {
     getOp = OP_GET_LOCAL;
@@ -407,9 +407,9 @@ static void namedVariable(Token name, bool canAssign) {
   }
   if (canAssign && match(TOKEN_EQUAL)) {
     expression();
-    emitBytes(setOp, (uint8_t)arg);
+    emitBytes(setOp, (uint16_t)arg);
   } else {
-    emitBytes(getOp, (uint8_t)arg);
+    emitBytes(getOp, (uint16_t)arg);
   }
 }
 
