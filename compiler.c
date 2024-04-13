@@ -39,13 +39,19 @@ typedef struct {
   Precedence precedence;
 } ParseRule;
 
-typedef struct {
+typedef struct Local {
   Token name;
   int depth;
+  int index;
+
+  struct Local *right;
+  struct Local *left;
 } Local;
 
 typedef struct {
-  Local locals[UINT8_COUNT];
+  Local *localsRoot;
+  Local *lastInserted;
+
   int localCount;
   int scopeDepth;
 } Compiler;
@@ -79,6 +85,44 @@ static void error(const char *message) { errorAt(&parser.previous, message); }
 
 static void errorAtCurrent(const char *message) {
   errorAt(&parser.current, message);
+}
+
+static int tokenCompare(const Token *a, const Token *b) {
+  if (a->length != b->length) {
+    return a->length - b->length;
+  }
+
+  int result = memcmp(a->start, b->start, a->length);
+  return result;
+}
+
+static Local *bstInsert(Local *root, Token name, int depth, int *index,
+                        Local **lastInserted) {
+  if (root == NULL) {
+    Local *newLocal = malloc(sizeof(Local));
+    if (newLocal == NULL) {
+      error("OOM");
+      return NULL;
+    }
+
+    newLocal->name = name;
+    newLocal->depth = depth;
+    newLocal->index = (*index)++;
+
+    *lastInserted = newLocal;
+    newLocal->left = newLocal->right = NULL;
+    return newLocal;
+  }
+
+  int cmp = tokenCompare(&name, &root->name);
+
+  if (cmp < 0) {
+    root->left = bstInsert(root->left, name, depth, index, lastInserted);
+  } else if (cmp > 0) {
+    root->right = bstInsert(root->right, name, depth, index, lastInserted);
+  }
+
+  return root;
 }
 
 static void advance() {
@@ -136,6 +180,8 @@ static void emitConstant(Value value) {
 }
 
 static void initCompiler(Compiler *compiler) {
+  compiler->localsRoot = NULL;
+  compiler->lastInserted = NULL;
   compiler->localCount = 0;
   compiler->scopeDepth = 0;
   current = compiler;
@@ -152,14 +198,26 @@ static void endCompiler() {
 
 static void beginScope() { current->scopeDepth++; }
 
+Local *removeLocalsAtDepth(Local *root, int depth, int *count) {
+  if (root == NULL)
+    return NULL;
+
+  root->left = removeLocalsAtDepth(root->left, depth, count);
+  root->right = removeLocalsAtDepth(root->right, depth, count);
+
+  if (root->depth == depth) {
+    emitByte(OP_POP);
+    (*count)--;
+    return root;
+  }
+
+  return root;
+}
+
 static void endScope() {
   current->scopeDepth--;
-
-  while (current->localCount > 0 &&
-         current->locals[current->localCount - 1].depth > current->scopeDepth) {
-    emitByte(OP_POP);
-    current->localCount--;
-  }
+  current->localsRoot = removeLocalsAtDepth(
+      current->localsRoot, current->scopeDepth + 1, &current->localCount);
 }
 
 static void expression();
@@ -178,17 +236,30 @@ static bool identifiersEqual(Token *a, Token *b) {
   return memcmp(a->start, b->start, a->length) == 0;
 }
 
-static int resolveLocal(Compiler *compiler, Token *name) {
-  for (int i = compiler->localCount - 1; i >= 0; i--) {
-    Local *local = &compiler->locals[i];
-    if (identifiersEqual(name, &local->name)) {
-      if (local->depth == -1) {
-        error("Can't read local variable in its own initializer.");
-      }
-      return i;
-    }
+static Local *bstSearch(Local *root, Token *name) {
+  if (root == NULL) {
+    return NULL;
   }
 
+  int cmp = tokenCompare(name, &root->name);
+  if (cmp == 0) {
+    return root;
+  }
+  if (cmp < 0) {
+    return bstSearch(root->left, name);
+  }
+
+  return bstSearch(root->right, name);
+}
+
+static int resolveLocal(Compiler *compiler, Token *name) {
+  Local *local = bstSearch(compiler->localsRoot, name);
+  if (local != NULL) {
+    if (local->depth == -1) {
+      error("Can't read local variable in its own initializer.");
+    }
+    return local->index;
+  }
   return -1;
 }
 
@@ -198,9 +269,24 @@ static void addLocal(Token name) {
     return;
   }
 
-  Local *local = &current->locals[current->localCount++];
-  local->name = name;
-  local->depth = -1;
+  current->localsRoot = bstInsert(current->localsRoot, name, -1,
+                                  &current->localCount, &current->lastInserted);
+}
+
+static bool bstCheckScope(Local *root, Token *name, int scopeDepth) {
+  if (root == NULL) {
+    return false;
+  }
+
+  int cmp = tokenCompare(name, &root->name);
+  if (cmp == 0 && root->depth != -1 && root->depth < scopeDepth) {
+    return true;
+  }
+
+  if (bstCheckScope(root->left, name, scopeDepth))
+    return true;
+  if (bstCheckScope(root->right, name, scopeDepth))
+    return true;
 }
 
 static void declareVariable() {
@@ -208,16 +294,11 @@ static void declareVariable() {
     return;
 
   Token *name = &parser.previous;
-  for (int i = current->localCount - 1; i >= 0; i--) {
-    Local *local = &current->locals[i];
-    if (local->depth != -1 && local->depth < current->scopeDepth) {
-      break;
-    }
-
-    if (identifiersEqual(name, &local->name)) {
-      error("Already a variable with this name in this scope.");
-    }
+  if (bstCheckScope(current->localsRoot, name, current->scopeDepth)) {
+    error("Already a variable with this name in this scope.");
+    return;
   }
+
   addLocal(*name);
 }
 
@@ -232,7 +313,9 @@ static uint8_t parseVariable(const char *errorMessage) {
 }
 
 static void markInitialized() {
-  current->locals[current->localCount - 1].depth = current->scopeDepth;
+  if (current->lastInserted != NULL && current->lastInserted->depth == -1) {
+    current->lastInserted->depth = current->scopeDepth;
+  }
 }
 
 static void defineVariable(uint8_t global) {
