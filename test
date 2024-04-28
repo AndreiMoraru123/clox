@@ -1,8 +1,9 @@
-var breakfast = "beignets";
-{
-    breakfast = "beignets";
-    var beverage = "cafe au lait";
-    breakfast = "beignets with " + beverage;
+var breakfast = 1;
+
+if (breakfast == 2) {
+    print 2;
 }
 
-print breakfast;
+if (breakfast == 1) {
+    print "works";
+}
