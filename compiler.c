@@ -133,7 +133,7 @@ static void emitLoop(int loopStart) {
 
   int offset = currentChunk()->count - loopStart + 2;
   if (offset > UINT16_MAX)
-    error("Lloop body too large.");
+    error("Loop body too large.");
 
   emitByte((offset >> 8) & 0xff);
   emitByte(offset & 0xff);
@@ -370,7 +370,7 @@ static void expressionStatement() {
 
 static void forStatement() {
   beginScope();
-  consume(TOKEN_LEFT_PAREN, "Expecct '(' after 'for'.");
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
 
   // Initializer clause
   if (match(TOKEN_SEMICOLON)) {
@@ -418,6 +418,7 @@ static void forStatement() {
 
   endScope();
 }
+
 static void ifStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
   expression();
