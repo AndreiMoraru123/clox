@@ -6,8 +6,6 @@
 #include "compiler.h"
 #include "scanner.h"
 
-#include <stdatomic.h>
-
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
 #endif
@@ -50,6 +48,8 @@ typedef struct {
   Local locals[UINT8_COUNT];
   int localCount;
   int scopeDepth;
+  int loopStart;
+  int loopDepth;
 } Compiler;
 
 Parser parser;
@@ -133,7 +133,7 @@ static void emitLoop(int loopStart) {
 
   int offset = currentChunk()->count - loopStart + 2;
   if (offset > UINT16_MAX)
-    error("Lloop body too large.");
+    error("Loop body too large.");
 
   emitByte((offset >> 8) & 0xff);
   emitByte(offset & 0xff);
@@ -169,6 +169,8 @@ static void patchJump(int offset) {
 static void initCompiler(Compiler *compiler) {
   compiler->localCount = 0;
   compiler->scopeDepth = 0;
+  compiler->loopStart = -1;
+  compiler->loopDepth = 0;
   current = compiler;
 }
 
@@ -369,8 +371,9 @@ static void expressionStatement() {
 }
 
 static void forStatement() {
+  current->loopDepth++;
   beginScope();
-  consume(TOKEN_LEFT_PAREN, "Expecct '(' after 'for'.");
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
 
   // Initializer clause
   if (match(TOKEN_SEMICOLON)) {
@@ -381,6 +384,7 @@ static void forStatement() {
     expressionStatement();
   }
 
+  // start of the condition check, not updating the compiler loopStart here
   int loopStart = currentChunk()->count;
 
   // Condition clause
@@ -395,20 +399,21 @@ static void forStatement() {
   }
 
   // Increment clause
+  int bodyJump = emitJump(OP_JUMP); // jump from condition check to body
+  int incrementStart = currentChunk()->count;
+
   if (!match(TOKEN_RIGHT_PAREN)) {
-    int bodyJump = emitJump(OP_JUMP);
-    int incrementStart = currentChunk()->count;
     expression();
     emitByte(OP_POP);
     consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
-
     emitLoop(loopStart);
-    loopStart = incrementStart;
-    patchJump(bodyJump);
   }
 
+  patchJump(bodyJump);
+  current->loopStart = incrementStart; // set here to start at increment clause
+
   statement();
-  emitLoop(loopStart);
+  emitLoop(incrementStart); // jump back to increment each iteration
 
   // patch the jump for the condition clause
   if (exitJump != -1) {
@@ -417,7 +422,9 @@ static void forStatement() {
   }
 
   endScope();
+  current->loopDepth--;
 }
+
 static void ifStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
   expression();
@@ -443,7 +450,9 @@ static void printStatement() {
 }
 
 static void whileStatement() {
+  current->loopDepth++;
   int loopStart = currentChunk()->count;
+  current->loopStart = loopStart;
   consume(TOKEN_LEFT_PAREN, "Expect '(' after while.");
   expression();
   consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
@@ -455,6 +464,31 @@ static void whileStatement() {
 
   patchJump(exitJump);
   emitByte(OP_POP);
+  current->loopDepth--;
+}
+
+static bool isInsideLoop() {
+  Compiler *compiler = current;
+  if (compiler->loopDepth > 0) {
+    return true;
+  }
+  return false;
+}
+
+static int getLoopStart() {
+  Compiler *compiler = current;
+  if (compiler->loopStart > 0) {
+    return compiler->loopStart;
+  }
+  return -1;
+}
+
+static void continueStatement() {
+  if (!isInsideLoop()) {
+    error("Syntax Error: 'continue' must be inside a loop");
+  }
+  emitLoop(getLoopStart());
+  emitByte(OP_JUMP);
 }
 
 static void synchronize() {
@@ -498,6 +532,9 @@ static void statement() {
     ifStatement();
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
+  } else if (match(TOKEN_CONTINUE)) {
+    continueStatement();
+    consume(TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
   } else if (match(TOKEN_LEFT_BRACE)) {
     beginScope();
     block();
@@ -579,6 +616,7 @@ ParseRule rules[] = {
     [TOKEN_LEFT_BRACE] = {NULL, NULL, PREC_NONE},
     [TOKEN_RIGHT_BRACE] = {NULL, NULL, PREC_NONE},
     [TOKEN_COMMA] = {NULL, NULL, PREC_NONE},
+    [TOKEN_CONTINUE] = {NULL, NULL, PREC_NONE},
     [TOKEN_DOT] = {NULL, NULL, PREC_NONE},
     [TOKEN_MINUS] = {unary, binary, PREC_TERM},
     [TOKEN_PLUS] = {NULL, binary, PREC_TERM},

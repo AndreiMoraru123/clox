@@ -1,9 +1,16 @@
 var breakfast = 1;
 
-if (breakfast == 2) {
-    print 2;
+while (breakfast < 5) {
+    breakfast = breakfast + 1;
+    if (breakfast == 2) {
+        continue;
+    }
+    print breakfast;
 }
 
-if (breakfast == 1) {
-    print "works";
+for (var i = 6; i < 10; i=i+1) {
+    if (i == 8) {
+        continue;
+    }
+    print i;
 }
