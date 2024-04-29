@@ -10,6 +10,7 @@ typedef enum {
   OP_LOOP,
   OP_RETURN,
   OP_CONSTANT,
+  OP_COPY,
   OP_NIL,
   OP_TRUE,
   OP_FALSE,

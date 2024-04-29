@@ -1,9 +1,10 @@
-var breakfast = 1;
+var breakfast = 2;
 
-if (breakfast == 2) {
-    print 2;
-}
-
-if (breakfast == 1) {
-    print "works";
+switch (breakfast) {
+    case 1:
+        print 1;
+    case 2:
+        print 2;
+    default:
+        print 0;
 }

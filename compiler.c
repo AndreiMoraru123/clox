@@ -418,6 +418,7 @@ static void forStatement() {
 
   endScope();
 }
+
 static void ifStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
   expression();
@@ -434,6 +435,51 @@ static void ifStatement() {
   if (match(TOKEN_ELSE))
     statement();
   patchJump(elseJump);
+}
+
+static void switchStatement() {
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after 'switch'.");
+  expression(); // switch value
+  consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+  consume(TOKEN_LEFT_BRACE, "Expect '{' after switch clause.");
+
+  int escJumps[256];
+  int caseCount = 0;
+  bool hasDefault = false;
+
+  emitByte(OP_COPY); // copy switch value for comparison
+
+  while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+    if (match(TOKEN_CASE)) {
+      expression();
+      consume(TOKEN_COLON, "Expect : after case expression.");
+
+      emitByte(OP_EQUAL);
+      int falseJump = emitJump(OP_JUMP_IF_FALSE);
+
+      statement();
+      // jump to the end of swtich
+      escJumps[caseCount++] = emitJump(OP_JUMP);
+      patchJump(falseJump);
+      emitByte(OP_POP);
+    } else if (match(TOKEN_DEFAULT)) {
+      consume(TOKEN_COLON, "Expect : after default case.");
+      hasDefault = true;
+      break;
+    }
+  }
+
+  emitByte(OP_POP); // pop the switch statement off the stack
+
+  if (hasDefault) {
+    statement();
+  }
+
+  consume(TOKEN_RIGHT_BRACE, "Expect '}' after switch block.");
+
+  for (int i = 0; i < caseCount; ++i) {
+    patchJump(escJumps[i]);
+  }
 }
 
 static void printStatement() {
@@ -469,6 +515,7 @@ static void synchronize() {
     case TOKEN_VAR:
     case TOKEN_FOR:
     case TOKEN_IF:
+    case TOKEN_SWITCH:
     case TOKEN_WHILE:
     case TOKEN_PRINT:
     case TOKEN_RETURN:
@@ -496,6 +543,8 @@ static void statement() {
     forStatement();
   } else if (match(TOKEN_IF)) {
     ifStatement();
+  } else if (match(TOKEN_SWITCH)) {
+    switchStatement();
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
   } else if (match(TOKEN_LEFT_BRACE)) {
@@ -608,6 +657,7 @@ ParseRule rules[] = {
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
+    [TOKEN_SWITCH] = {NULL, NULL, PREC_NONE},
     [TOKEN_THIS] = {NULL, NULL, PREC_NONE},
     [TOKEN_TRUE] = {literal, NULL, PREC_NONE},
     [TOKEN_VAR] = {NULL, NULL, PREC_NONE},

@@ -103,6 +103,11 @@ static InterpreterResult run() {
       push(constant);
       break;
     }
+    case OP_COPY: {
+      Value value = peek(0);
+      push(value);
+      break;
+    }
     case OP_NIL:
       push(NIL_VAL);
       break;
