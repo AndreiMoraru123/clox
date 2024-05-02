@@ -1,9 +1,8 @@
-var breakfast = 1;
-
-if (breakfast == 2) {
-    print 2;
+fun fib(n) {
+  if (n < 2) return n;
+  return fib(n - 2) + fib(n - 1);
 }
 
-if (breakfast == 1) {
-    print "works";
-}
+var start = clock();
+print fib(10);
+print clock() - start;
