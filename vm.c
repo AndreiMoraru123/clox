@@ -43,9 +43,10 @@ static void runtimeError(const char *format, ...) {
   resetStack();
 }
 
-static void defineNative(const char *name, NativeFn function, int arity) {
+static void defineNative(const char *name, NativeFn function, int arity,
+                         ValueTypeArg expectedTypes[]) {
   push(OBJ_VAL(copyString(name, (int)strlen(name))));
-  push(OBJ_VAL(newNative(function, arity)));
+  push(OBJ_VAL(newNative(function, arity, expectedTypes)));
   tableSet(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
   pop();
   pop();
@@ -56,7 +57,7 @@ void initVM() {
   vm.objects = NULL;
   initTable(&vm.globals);
   initTable(&vm.strings);
-  defineNative("clock", clockNative, 0);
+  defineNative("clock", clockNative, 0, NULL);
 }
 
 void freeVM() {
@@ -94,6 +95,23 @@ static bool call(ObjFunction *function, int argCount) {
   return true;
 }
 
+const char *getTypeName(ValueTypeArg type) {
+  switch (type) {
+  case TYPE_BOOL:
+    return "bool";
+  case TYPE_STRING:
+    return "string";
+  case TYPE_NUMBER:
+    return "number";
+  case TYPE_FN:
+    return "function";
+  case TYPE_OBJ:
+    return "object";
+  default:
+    return "unknown";
+  }
+}
+
 static bool callValue(Value callee, int argCount) {
   if (IS_OBJ(callee)) {
     switch (OBJ_TYPE(callee)) {
@@ -106,6 +124,36 @@ static bool callValue(Value callee, int argCount) {
                      argCount);
         return false;
       }
+
+      for (int i = 0; i < argCount; i++) {
+        Value arg = *(vm.stackTop - argCount + i);
+        ValueTypeArg expectedType = native->expectedTypes[i];
+
+        bool typeMatches = false;
+        switch (expectedType) {
+        case TYPE_BOOL:
+          typeMatches = IS_BOOL(arg);
+          break;
+        case TYPE_NUMBER:
+          typeMatches = IS_NUMBER(arg);
+          break;
+        case TYPE_STRING:
+          typeMatches = IS_STRING(arg);
+          break;
+        case TYPE_OBJ:
+          typeMatches = IS_OBJ(arg);
+          break;
+        case TYPE_FN:
+          typeMatches = IS_FUNCTION(arg);
+          break;
+        }
+
+        if (!typeMatches) {
+          runtimeError("Argument %d: expected %s, but got a different type.", i,
+                       getTypeName(expectedType));
+          return false;
+        }
+      }
       Value result = native->function(argCount, vm.stackTop - argCount);
       vm.stackTop -= argCount + 1;
       push(result);
@@ -116,6 +164,7 @@ static bool callValue(Value callee, int argCount) {
     }
   }
   runtimeError("Can only call functions and classes");
+  return false;
 }
 
 static bool isFalsey(Value value) {

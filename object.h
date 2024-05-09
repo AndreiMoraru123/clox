@@ -35,10 +35,19 @@ typedef struct {
 
 typedef Value (*NativeFn)(int argCount, Value *args);
 
+typedef enum {
+  TYPE_BOOL,
+  TYPE_NUMBER,
+  TYPE_OBJ,
+  TYPE_STRING,
+  TYPE_FN,
+} ValueTypeArg;
+
 typedef struct {
   Obj obj;
   NativeFn function;
   int arity;
+  ValueTypeArg expectedTypes[255];
 } ObjNative;
 
 struct ObjString {
@@ -49,7 +58,8 @@ struct ObjString {
 };
 
 ObjFunction *newFunction();
-ObjNative *newNative(NativeFn function, int arity);
+ObjNative *newNative(NativeFn function, int arity,
+                     ValueTypeArg expectedTypes[]);
 ObjString *takeString(char *chars, int length);
 ObjString *copyString(const char *chars, int length);
 void printObject(Value value);
