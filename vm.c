@@ -9,12 +9,28 @@
 #include "object.h"
 #include "vm.h"
 
+#include <math.h>
 #include <time.h>
 
 VM vm;
 
 static Value clockNative(int argCount, Value *args) {
   return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+}
+
+static Value lenNative(int argCount, Value *args) {
+  if (IS_STRING(args[0])) {
+    ObjString *string = AS_STRING(args[0]);
+    return NUMBER_VAL((double)string->length);
+  }
+  return NIL_VAL;
+}
+
+static Value sqrtNative(int argCount, Value *args) {
+  if (IS_NUMBER(args[0])) {
+    return NUMBER_VAL(sqrt(AS_NUMBER(args[0])));
+  }
+  return NIL_VAL;
 }
 
 static void resetStack() {
@@ -58,6 +74,10 @@ void initVM() {
   initTable(&vm.globals);
   initTable(&vm.strings);
   defineNative("clock", clockNative, 0, NULL);
+  ValueTypeArg lenExpectedTypes[] = {TYPE_STRING};
+  defineNative("len", lenNative, 1, lenExpectedTypes);
+  ValueTypeArg sqrtExpectedTypes[] = {TYPE_NUMBER};
+  defineNative("sqrt", sqrtNative, 1, sqrtExpectedTypes);
 }
 
 void freeVM() {
