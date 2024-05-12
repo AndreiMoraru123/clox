@@ -11,7 +11,7 @@ fun test_closure() {
     fun outer() {
         var y = 0;
         fun inner() {
-            y = y + 1;  // Modify the captured variable
+            y = y + 1;
         }
         return inner;
     }
