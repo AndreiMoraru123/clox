@@ -1,19 +1,39 @@
-var globalOne;
-var globalTwo;
+fun Vector(x, y) {
+    fun getX() {
+        return x;
+    }
 
-fun main() {
-  for (var a = 1; a <= 2; a = a + 1) {
-    fun closure() {
-      print a;
+    fun getY() {
+        return y;
     }
-    if (globalOne == nil) {
-      globalOne = closure;
-    } else {
-      globalTwo = closure;
+
+    fun add(other) {
+        return Vector(x + other("getX")(), y + other("getY")());
     }
-  }
+
+    fun ret(method) {
+        if (method == "getX") {
+            return getX;
+        } else if (method == "getY") {
+            return getY;
+        } else if (method == "add") {
+            return add;
+        } else {
+            return nil;
+        }
+    }
+    return ret;
 }
 
-main();
-globalOne();
-globalTwo();
+var vector1 = Vector(1, 2);
+var vector2 = Vector(3, 4);
+
+var v1X = vector1("getX");
+print v1X(); // 1
+
+var v2Y = vector2("getY");
+print v2Y(); // 4
+
+var vector3 = vector1("add")(vector2);
+print vector3("getX")(); // 4
+print vector3("getY")(); // 6
