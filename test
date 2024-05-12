@@ -1,16 +1,32 @@
-var globalSet;
-var globalGet;
-
-fun main() {
-  var a = "initial";
-
-  fun set() { a = "updated"; }
-  fun get() { print a; }
-
-  globalSet = set;
-  globalGet = get;
+fun benchmark(label, func) {
+    var start = clock();
+    func();
+    var end = clock();
+    print label;
+    print end - start;
 }
 
-main();
-globalSet();
-globalGet();
+fun test_closure() {
+    var x = 0;
+    fun outer() {
+        var y = 0;
+        fun inner() {
+            y = y + 1;  // Modify the captured variable
+        }
+        return inner;
+    }
+    var myClosure = outer();
+    for (var i = 0; i < 1000; i=i+1) {
+        myClosure();
+    }
+}
+
+fun test_function() {
+    var a = 0;
+    for (var i = 0; i < 1000; i=i+1) {
+        a = a + i;
+    }
+}
+
+benchmark("Closure Test", test_closure);
+benchmark("Function Test", test_function);
