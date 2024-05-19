@@ -19,6 +19,9 @@
                      sizeof(type) * newCount)
 
 void *reallocate(void *pointer, size_t oldSize, size_t newSize);
+void markValue(Value value);
+void markObject(Obj *object);
+void collectGarbage();
 void freeObjects();
 
 #endif
