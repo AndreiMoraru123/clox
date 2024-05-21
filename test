@@ -1,19 +1,5 @@
-var globalOne;
-var globalTwo;
-
-fun main() {
-  for (var a = 1; a <= 2; a = a + 1) {
-    fun closure() {
-      print a;
-    }
-    if (globalOne == nil) {
-      globalOne = closure;
-    } else {
-      globalTwo = closure;
-    }
-  }
+var global = "string";
+{
+  var local = "another";
+  print global + local;
 }
-
-main();
-globalOne();
-globalTwo();

@@ -4,6 +4,8 @@
 
 #include "common.h"
 #include "compiler.h"
+
+#include "memory.h"
 #include "scanner.h"
 
 #ifdef DEBUG_PRINT_CODE
@@ -154,6 +156,16 @@ static void emitReturn() {
   emitByte(OP_RETURN);
 }
 
+static void incrementRefCount(Obj *object) {
+  if (object != NULL) {
+    object->refCount++;
+#ifdef DEBUG_LOG_RC
+    printf("incremented ref count of %p to %d\n", (void *)object,
+           object->refCount);
+#endif
+  }
+}
+
 static uint8_t makeConstant(Value value) {
   int constant = addConstant(currentChunk(), value);
   if (constant > UINT8_MAX) {
@@ -161,6 +173,9 @@ static uint8_t makeConstant(Value value) {
     return 0;
   }
 
+  if (IS_OBJ(value)) {
+    incrementRefCount(AS_OBJ(value));
+  }
   return (uint8_t)constant;
 }
 
@@ -811,4 +826,12 @@ ObjFunction *compile(const char *source) {
   }
   ObjFunction *function = endCompiler();
   return parser.hadError ? NULL : function;
+}
+
+void markCompilerRoots() {
+  Compiler *compiler = current;
+  while (compiler != NULL) {
+    markObject((Obj *)compiler->function);
+    compiler = compiler->enclosing;
+  }
 }
