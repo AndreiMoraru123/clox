@@ -3,6 +3,8 @@
 
 #include "memory.h"
 #include "object.h"
+
+#include "compiler.h"
 #include "table.h"
 #include "value.h"
 #include "vm.h"

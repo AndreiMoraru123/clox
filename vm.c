@@ -172,6 +172,8 @@ static void concatenate() {
   ObjString *result = takeString(chars, length);
   pop();
   pop();
+  decrementRefCount(AS_OBJ(OBJ_VAL(a)));
+  decrementRefCount(AS_OBJ(OBJ_VAL(b)));
   push(OBJ_VAL(result));
 }
 

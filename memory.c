@@ -172,7 +172,6 @@ static void sweep() {
       previous = object;
       object = object->next;
     } else { // decrement ref count
-      object->refCount--;
       if (object->refCount == 0) {
         Obj *unreached = object;
         object = object->next;

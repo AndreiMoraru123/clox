@@ -156,7 +156,17 @@ static void emitReturn() {
   emitByte(OP_RETURN);
 }
 
-static void incrementRefCount(Obj *object) {
+void decrementRefCount(Obj *object) {
+  if (object != NULL) {
+    object->refCount--;
+#ifdef DEBUG_LOG_RC
+    printf("decremented ref count of %p to %d\n", (void *)object,
+           object->refCount);
+#endif
+  }
+}
+
+void incrementRefCount(Obj *object) {
   if (object != NULL) {
     object->refCount++;
 #ifdef DEBUG_LOG_RC
