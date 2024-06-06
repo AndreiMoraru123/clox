@@ -281,17 +281,38 @@ static InterpreterResult run() {
         runtimeError("Only instances have properties.");
         return INTERPRET_RUNTIME_ERROR;
       }
-      ObjInstance *instace = AS_INSTANCE(peek(0));
+      ObjInstance *instance = AS_INSTANCE(peek(0));
       ObjString *name = READ_STRING();
 
       Value value;
-      if (tableGet(&instace->fields, name, &value)) {
+      if (tableGet(&instance->fields, name, &value)) {
         pop(); // instance
         push(value);
         break;
       }
 
       runtimeError("Undefined property '%s'.", name->chars);
+      return INTERPRET_RUNTIME_ERROR;
+    }
+    case OP_GET_PROPERTY_DYNAMIC: {
+      if (!IS_INSTANCE(peek(1))) {
+        runtimeError("Only instances have properties.");
+        return INTERPRET_RUNTIME_ERROR;
+      }
+      ObjInstance *instance = AS_INSTANCE(peek(1));
+      Value propertyNameValue = peek(0);
+
+      ObjString *propertyName = AS_STRING(propertyNameValue);
+
+      Value value;
+      if (tableGet(&instance->fields, propertyName, &value)) {
+        pop(); // property name
+        pop(); // instance
+        push(value);
+        break;
+      }
+
+      runtimeError("Undefined property '%s'.", propertyName->chars);
       return INTERPRET_RUNTIME_ERROR;
     }
     case OP_SET_PROPERTY: {
@@ -303,6 +324,29 @@ static InterpreterResult run() {
       tableSet(&instance->fields, READ_STRING(), peek(0));
       Value value = pop();
       pop();
+      push(value);
+      break;
+    }
+    case OP_SET_PROPERTY_DYNAMIC: {
+      if (!IS_INSTANCE(peek(2))) {
+        runtimeError("Only instances have fields.");
+        return INTERPRET_RUNTIME_ERROR;
+      }
+      ObjInstance *instance = AS_INSTANCE(peek(2));
+      Value propertyNameValue = peek(1);
+      Value value = peek(0);
+
+      if (!IS_STRING(propertyNameValue)) {
+        runtimeError("Property name must be a string");
+        return INTERPRET_RUNTIME_ERROR;
+      }
+
+      ObjString *propertyName = AS_STRING(propertyNameValue);
+
+      tableSet(&instance->fields, propertyName, value);
+      pop(); // value
+      pop(); // property name
+      pop(); // instance
       push(value);
       break;
     }
