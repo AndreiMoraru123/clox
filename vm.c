@@ -291,8 +291,8 @@ static InterpreterResult run() {
         break;
       }
 
-      runtimeError("Undefined property '%s'.", name->chars);
-      return INTERPRET_RUNTIME_ERROR;
+      push(NIL_VAL);
+      break;
     }
     case OP_SET_PROPERTY: {
       if (!IS_INSTANCE(peek(1))) {
