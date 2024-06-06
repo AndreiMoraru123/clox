@@ -605,6 +605,21 @@ static void printStatement() {
   emitByte(OP_PRINT);
 }
 
+static void deleteStatement() {
+  consume(TOKEN_IDENTIFIER, "Expect instance name after delete.");
+  uint8_t instanceName = identifierConstant(&parser.previous);
+
+  consume(TOKEN_DOT, "Expect '.' after instance name.");
+
+  consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
+  uint8_t propertyName = identifierConstant(&parser.previous);
+
+  consume(TOKEN_SEMICOLON, "Expect ';' after property name");
+
+  emitBytes(OP_DELETE_PROPERTY, instanceName);
+  emitByte(propertyName);
+}
+
 static void returnStatement() {
   if (current->type == TYPE_SCRIPT) {
     error("Can't return from top-level code.");
@@ -678,6 +693,8 @@ static void statement() {
     ifStatement();
   } else if (match(TOKEN_RETURN)) {
     returnStatement();
+  } else if (match(TOKEN_DELETE)) {
+    deleteStatement();
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
   } else if (match(TOKEN_LEFT_BRACE)) {
@@ -792,6 +809,7 @@ ParseRule rules[] = {
     [TOKEN_OR] = {NULL, or_, PREC_OR},
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
+    [TOKEN_DELETE] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {NULL, NULL, PREC_NONE},
     [TOKEN_THIS] = {NULL, NULL, PREC_NONE},
     [TOKEN_TRUE] = {literal, NULL, PREC_NONE},

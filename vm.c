@@ -306,6 +306,25 @@ static InterpreterResult run() {
       push(value);
       break;
     }
+    case OP_DELETE_PROPERTY: {
+      ObjString *instanceName = READ_STRING();
+      ObjString *propertyName = READ_STRING();
+
+      Value instanceValue;
+      if (!tableGet(&vm.globals, instanceName, &instanceValue) ||
+          !IS_INSTANCE(instanceValue)) {
+        runtimeError("Undefined variable '%s'.", instanceName->chars);
+        return INTERPRET_RUNTIME_ERROR;
+      }
+
+      ObjInstance *instance = AS_INSTANCE(instanceValue);
+
+      if (!tableDelete(&instance->fields, propertyName)) {
+        runtimeError("Undefined property '%s'.", propertyName->chars);
+        return INTERPRET_RUNTIME_ERROR;
+      }
+      break;
+    }
     case OP_EQUAL: {
       Value b = pop();
       Value a = pop();

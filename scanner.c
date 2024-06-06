@@ -109,6 +109,8 @@ static TokenType identifierType() {
     return checkKeyword(1, 2, "nd", TOKEN_AND);
   case 'c':
     return checkKeyword(1, 4, "lass", TOKEN_CLASS);
+  case 'd':
+    return checkKeyword(1, 5, "elete", TOKEN_DELETE);
   case 'e':
     return checkKeyword(1, 3, "lse", TOKEN_ELSE);
   case 'f':
