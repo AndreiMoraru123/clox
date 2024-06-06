@@ -281,11 +281,11 @@ static InterpreterResult run() {
         runtimeError("Only instances have properties.");
         return INTERPRET_RUNTIME_ERROR;
       }
-      ObjInstance *instace = AS_INSTANCE(peek(0));
+      ObjInstance *instance = AS_INSTANCE(peek(0));
       ObjString *name = READ_STRING();
 
       Value value;
-      if (tableGet(&instace->fields, name, &value)) {
+      if (tableGet(&instance->fields, name, &value)) {
         pop(); // instance
         push(value);
         break;
