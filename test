@@ -5,4 +5,4 @@ pair.first = 1;
 pair.second = 2;
 
 var fieldName = "second";
-print pair.first + pair["second"]; // 3.
+print pair.first + pair[fieldName]; // 3.
