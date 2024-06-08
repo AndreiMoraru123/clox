@@ -34,9 +34,11 @@ typedef enum {
   OP_NOT,
   OP_NEGATE,
   OP_PRINT,
+  OP_INVOKE,
   OP_CLOSURE,
   OP_CLOSE_UPVALUE,
   OP_CLASS,
+  OP_METHOD,
 } OpCode;
 
 typedef struct {
