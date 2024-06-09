@@ -82,6 +82,7 @@ typedef struct {
   Obj obj;
   ObjString *name;
   Table methods;
+  ObjClosure *initMethod;
 } ObjClass;
 
 typedef struct {
