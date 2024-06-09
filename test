@@ -1,26 +1,19 @@
-class CoffeeMaker {
-    init(coffee) {
-        this.coffee = coffee;
-    }
-
-    brew() {
-        print "Enjoy your " + this.coffee;
-        this.coffee = nil;
-    }
-}
-
-var coffeeMaker = CoffeeMaker("latte");
-coffeeMaker.brew();
-
-class Oops {
-  init() {
-    fun f() {
-      print "not a method";
-    }
-
-    this.field = f;
+class A {
+  method() {
+    print "A method";
   }
 }
 
-var oops = Oops();
-oops.field();
+class B < A {
+  method() {
+    print "B method";
+  }
+
+  test() {
+    super.method();
+  }
+}
+
+class C < B {}
+
+C().test();
