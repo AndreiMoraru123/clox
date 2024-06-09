@@ -8,4 +8,4 @@ var start = clock();
 for (var i = 0; i < 100000; i = i + 1) {
     var coffeeMaker = CoffeeMaker("latte");
 }
-print clock() - start;
+print clock() - start; // 0.030067 vs 0.040881 on master
