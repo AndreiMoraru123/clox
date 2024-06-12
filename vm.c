@@ -38,7 +38,7 @@ static void runtimeError(const char *format, ...) {
     if (function->name == NULL) {
       fprintf(stderr, "script\n");
     } else {
-      fprintf(stderr, "%s()\n", function->name->chars);
+      fprintf(stderr, "%s()\n", getStringChars(function->name));
     }
   }
   resetStack();
@@ -147,7 +147,7 @@ static bool callValue(Value callee, int argCount) {
 static bool invokeFromClass(ObjClass *class, ObjString *name, int argCount) {
   Value method;
   if (!tableGet(&class->methods, name, &method)) {
-    runtimeError("Undefined property '%s'.", name->chars);
+    runtimeError("Undefined property '%s'.", getStringChars(name));
     return false;
   }
   return call(AS_CLOSURE(method), argCount);
@@ -177,7 +177,7 @@ static bool invoke(ObjString *name, int argCount) {
 static bool bindMethod(ObjClass *class, ObjString *name) {
   Value method;
   if (!tableGet(&class->methods, name, &method)) {
-    runtimeError("Undefined property '%s'.", name->chars);
+    runtimeError("Undefined property '%s'.", getStringChars(name));
     return false;
   }
 
@@ -237,8 +237,8 @@ static void concatenate() {
 
   int length = a->length + b->length;
   char *chars = ALLOCATE(char, length + 1);
-  memcpy(chars, a->chars, a->length);
-  memcpy(chars + a->length, b->chars, b->length);
+  memcpy(chars, getStringChars(a), a->length);
+  memcpy(chars + a->length, getStringChars(b), b->length);
   chars[length] = '\0';
 
   ObjString *result = takeString(chars, length);
@@ -312,7 +312,7 @@ static InterpreterResult run() {
       ObjString *name = READ_STRING();
       Value value;
       if (!tableGet(&vm.globals, name, &value)) {
-        runtimeError("Undefined variable '%s'.", name->chars);
+        runtimeError("Undefined variable '%s'.", getStringChars(name));
       }
       push(value);
       break;
@@ -329,7 +329,7 @@ static InterpreterResult run() {
         /* if this is a new key, i.e. variable has not been defined yet,
          * then it's a runtime error to assign to it */
         tableDelete(&vm.globals, name);
-        runtimeError("Undefined variable '%s.", name->chars);
+        runtimeError("Undefined variable '%s.", getStringChars(name));
         return INTERPRET_RUNTIME_ERROR;
       }
       break;

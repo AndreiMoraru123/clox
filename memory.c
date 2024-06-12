@@ -163,8 +163,7 @@ static void freeObject(Obj *object) {
     break;
   case OBJ_STRING: {
     ObjString *string = (ObjString *)object;
-    FREE_ARRAY(char, string->chars, string->length + 1);
-    FREE(ObjString, object);
+    freeString(string);
     break;
   }
   case OBJ_UPVALUE:

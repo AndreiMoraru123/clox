@@ -128,7 +128,7 @@ ObjString *tableFindString(Table *table, const char *chars, int length,
       if (IS_NIL(entry->value))
         return NULL;
     } else if (entry->key->length == length && entry->key->hash == hash &&
-               memcmp(entry->key->chars, chars, length) == 0) {
+               memcmp(getStringChars(entry->key), chars, length) == 0) {
       // found it
       return entry->key;
     }

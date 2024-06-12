@@ -6,6 +6,9 @@
 #include "table.h"
 #include "value.h"
 
+#define INLINE_STRING_MAX 8
+#define IS_INLINE_STRING(length) ((length) < INLINE_STRING_MAX)
+
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
 #define IS_BOUND_METHOD(value) isObjType(value, OBJ_BOUND_METHOD)
@@ -23,7 +26,7 @@
 #define AS_INSTANCE(value) ((ObjInstance *)AS_OBJ(value))
 #define AS_NATIVE(value) (((ObjNative *)AS_OBJ(value))->function)
 #define AS_STRING(value) ((ObjString *)AS_OBJ(value))
-#define AS_CSTRING(value) (((ObjString *)AS_OBJ(value))->chars)
+#define AS_CSTRING(value) (getStringChars((ObjString *)AS_OBJ(value)))
 
 typedef enum {
   OBJ_BOUND_METHOD,
@@ -57,12 +60,19 @@ typedef struct {
   NativeFn function;
 } ObjNative;
 
-struct ObjString {
+typedef struct ObjString {
   Obj obj;
   int length;
-  char *chars;
   uint32_t hash;
-};
+  union {
+    struct {
+      char *chars;
+    } heapString;
+    struct {
+      char inlineChars[INLINE_STRING_MAX];
+    } smallString;
+  } as;
+} ObjString;
 
 typedef struct ObjUpvalue {
   Obj obj;
@@ -95,6 +105,9 @@ typedef struct {
   Value receiver; // always an ObjInstance
   ObjClosure *method;
 } ObjBoundMethod;
+
+char *getStringChars(ObjString *string);
+void freeString(ObjString *string);
 
 ObjBoundMethod *newBoundMethod(Value receiver, ObjClosure *method);
 ObjClass *newClass(ObjString *name);
