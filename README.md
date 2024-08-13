@@ -6,7 +6,7 @@ Each branch (other than `master`) represents an addition to the language, encomp
 
 Here are some sample Lox programs:
 
-```
+```js
 fun fib(n) {
   if (n < 2) return n;
   return fib(n - 2) + fib(n - 1);
@@ -17,7 +17,7 @@ print fib(10);
 print clock() - start;
 ```
 
-```
+```js
 // OOP support via class representation
 class Cake {
 
@@ -35,7 +35,7 @@ cake.flavor = "German chocolate";
 cake.taste();
 ```
 
-```
+```js
 class Doughnut {
   cook() {
     print "Fry until golden brown.";
